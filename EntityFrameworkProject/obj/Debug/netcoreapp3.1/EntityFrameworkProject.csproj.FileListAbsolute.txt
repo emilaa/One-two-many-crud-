@@ -858,3 +858,4 @@ C:\Users\Emil Abdullayev\Desktop\BackEnd\One two many crud\EntityFrameworkProjec
 C:\Users\Emil Abdullayev\Desktop\BackEnd\One two many crud\EntityFrameworkProject\obj\Debug\netcoreapp3.1\EntityFrameworkProject.genruntimeconfig.cache
 C:\Users\Emil Abdullayev\Desktop\BackEnd\One two many crud\EntityFrameworkProject\obj\Debug\netcoreapp3.1\Razor\Areas\AdminArea\Views\Product\Create.cshtml.g.cs
 C:\Users\Emil Abdullayev\Desktop\BackEnd\One two many crud\EntityFrameworkProject\obj\Debug\netcoreapp3.1\Razor\Areas\AdminArea\Views\Product\Detail.cshtml.g.cs
+C:\Users\Emil Abdullayev\Desktop\BackEnd\One two many crud\EntityFrameworkProject\obj\Debug\netcoreapp3.1\Razor\Areas\AdminArea\Views\Product\Edit.cshtml.g.cs

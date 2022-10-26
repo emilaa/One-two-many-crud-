@@ -43,32 +43,6 @@ namespace EntityFrameworkProject.Areas.AdminArea.Controllers
             return View(result);
         }
 
-        [HttpGet]
-        public async Task<IActionResult> Detail(int? id)
-        {
-            if (id == null) return BadRequest();
-
-            Product product = await _context.Products
-                .Where(m => !m.IsDeleted)
-                .Include(m => m.ProductImages)
-                .Include(m => m.Category)
-                .FirstOrDefaultAsync(m => m.Id == id);
-
-            if (product == null) return NotFound();
-
-            ProductDetailVM productDetail = new ProductDetailVM
-            {
-                Title = product.Title,
-                Description = product.Description,
-                MainImage = product.ProductImages.Where(m => m.IsMain).FirstOrDefault()?.Image,
-                CategoryName = product.Category.Name,
-                Price = product.Price
-            };
-
-            return View(productDetail);
-        }
-
-
         private async Task<int> GetPageCount(int take)
         {
             int productCount = await _context.Products.Where(m => !m.IsDeleted).CountAsync();
@@ -143,7 +117,6 @@ namespace EntityFrameworkProject.Areas.AdminArea.Controllers
 
                 await Helper.SaveFile(path, photo);
 
-
                 ProductImage image = new ProductImage
                 {
                     Image = fileName,
@@ -172,6 +145,156 @@ namespace EntityFrameworkProject.Areas.AdminArea.Controllers
             await _context.SaveChangesAsync();
 
             return RedirectToAction(nameof(Index));
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> Edit(int? id)
+        {
+            try
+            {
+                ViewBag.categories = await GetCategoriesAsync();
+
+                if (id is null) return BadRequest();
+
+                Product product = await _context.Products
+                .Where(m => !m.IsDeleted)
+                .Include(m => m.ProductImages)
+                .Include(m => m.Category)
+                .FirstOrDefaultAsync(m => m.Id == id);
+
+                if (product is null) return NotFound();
+
+                return View(product);
+
+            }
+            catch (Exception ex)
+            {
+                ViewBag.Message = ex.Message;
+                return View();
+            }
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Edit(int id, ProductUpdateVM product)
+        {
+            try
+            {
+                if (!ModelState.IsValid)
+                {
+                    return View(product);
+                }
+
+                foreach (var photo in product.Photos)
+                {
+                    if (!photo.CheckFileType("image/"))
+                    {
+                        ModelState.AddModelError("Photo", "Please choose correct image type");
+                        return View(product);
+                    }
+
+                    if (!photo.CheckFileSize(500))
+                    {
+                        ModelState.AddModelError("Photo", "Please choose correct image size");
+                        return View(product);
+                    }
+                }
+
+                List<ProductImage> images = new List<ProductImage>();
+
+                foreach (var photo in product.Photos)
+                {
+                    string fileName = Guid.NewGuid().ToString() + "_" + photo.FileName;
+
+                    string path = Helper.GetFilePath(_env.WebRootPath, "img", fileName);
+
+                    await Helper.SaveFile(path, photo);
+
+                    ProductImage image = new ProductImage
+                    {
+                        Image = fileName,
+                    };
+
+                    images.Add(image);
+                }
+
+                images.FirstOrDefault().IsMain = true;
+
+                Product dbProduct = await _context.Products
+                .Where(m => !m.IsDeleted)
+                .Include(m => m.ProductImages)
+                .Include(m => m.Category)
+                .AsNoTracking()
+                .FirstOrDefaultAsync(m => m.Id == id);
+
+                if (dbProduct is null) return NotFound();
+
+                ProductUpdateVM productUpdate = new ProductUpdateVM
+                {
+                    Title = dbProduct.Title,
+                    Description = dbProduct.Description,
+                    Price = dbProduct.Price,
+                    CreateDate = DateTime.Now,
+                    CategoryId = dbProduct.CategoryId,
+                    ProductImages = images
+                };
+
+                if (dbProduct.Title.ToLower().Trim() == productUpdate.Title.ToLower().Trim()
+                    && dbProduct.Description.ToLower().Trim() == productUpdate.Description.ToLower().Trim()
+                    && dbProduct.Price == productUpdate.Price
+                    && dbProduct.CreateDate == productUpdate.CreateDate
+                    && dbProduct.CategoryId == productUpdate.CategoryId
+                    && dbProduct.ProductImages == productUpdate.ProductImages
+                    )
+                {
+                    return RedirectToAction(nameof(Index));
+                }
+
+                dbProduct.Title = productUpdate.Title;
+                dbProduct.Description = productUpdate.Description;
+                dbProduct.Price = productUpdate.Price;
+                dbProduct.CreateDate = productUpdate.CreateDate;
+                dbProduct.CategoryId = productUpdate.CategoryId;
+                dbProduct.ProductImages = productUpdate.ProductImages;
+
+                //_context.Products.Update(product);
+
+                await _context.SaveChangesAsync();
+
+                return RedirectToAction(nameof(Index));
+
+            }
+            catch (Exception ex)
+            {
+
+                ViewBag.Message = ex.Message;
+                return View();
+            }
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> Detail(int? id)
+        {
+            if (id == null) return BadRequest();
+
+            Product product = await _context.Products
+                .Where(m => !m.IsDeleted)
+                .Include(m => m.ProductImages)
+                .Include(m => m.Category)
+                .FirstOrDefaultAsync(m => m.Id == id);
+
+            if (product == null) return NotFound();
+
+            ProductDetailVM productDetail = new ProductDetailVM
+            {
+                Title = product.Title,
+                Description = product.Description,
+                MainImage = product.ProductImages.Where(m => m.IsMain).FirstOrDefault()?.Image,
+                CategoryName = product.Category.Name,
+                Price = product.Price
+            };
+
+            return View(productDetail);
         }
 
         [HttpPost]
